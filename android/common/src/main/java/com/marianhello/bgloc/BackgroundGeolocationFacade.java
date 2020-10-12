@@ -14,8 +14,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.provider.Settings.SettingNotFoundException;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.content.LocalBroadcastManager;
+import androidx.core.content.ContextCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.text.TextUtils;
 
 import com.github.jparkie.promise.Promise;
@@ -42,6 +42,7 @@ import org.json.JSONException;
 import org.slf4j.event.Level;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.TimeoutException;
 
@@ -52,10 +53,14 @@ public class BackgroundGeolocationFacade {
     public static final int AUTHORIZATION_AUTHORIZED = 1;
     public static final int AUTHORIZATION_DENIED = 0;
 
-    public static final String[] PERMISSIONS = {
-            Manifest.permission.ACCESS_COARSE_LOCATION,
-            Manifest.permission.ACCESS_FINE_LOCATION
-    };
+    public ArrayList<String> PERMISSIONS = new ArrayList<String>(
+        Arrays.asList(Manifest.permission.ACCESS_COARSE_LOCATION,
+        Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+    );
+    // public String[] PERMISSIONS = {
+    //         Manifest.permission.ACCESS_COARSE_LOCATION,
+    //         Manifest.permission.ACCESS_FINE_LOCATION
+    // };
 
     private boolean mServiceBroadcastReceiverRegistered = false;
     private boolean mLocationModeChangeReceiverRegistered = false;
@@ -214,8 +219,13 @@ public class BackgroundGeolocationFacade {
     public void start() {
         logger.debug("Starting service");
 
+        if (Build.VERSION.SDK_INT >= 29){
+            this.PERMISSIONS.add(Manifest.permission.ACTIVITY_RECOGNITION);
+        }
+
         PermissionManager permissionManager = PermissionManager.getInstance(getContext());
-        permissionManager.checkPermissions(Arrays.asList(PERMISSIONS), new PermissionManager.PermissionRequestListener() {
+
+        permissionManager.checkPermissions(PERMISSIONS, new PermissionManager.PermissionRequestListener() {
             @Override
             public void onPermissionGranted() {
                 logger.info("User granted requested permissions");
@@ -409,7 +419,7 @@ public class BackgroundGeolocationFacade {
     }
 
     public boolean hasPermissions() {
-        return hasPermissions(getContext(), PERMISSIONS);
+        return hasPermissions(getContext(), PERMISSIONS.toArray(new String[PERMISSIONS.size()]));
     }
 
     public boolean locationServicesEnabled() throws PluginException {

@@ -7,6 +7,7 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.os.Bundle;
+import android.os.Build;
 import android.os.Looper;
 
 import com.github.jparkie.promise.Promise;
@@ -14,6 +15,7 @@ import com.github.jparkie.promise.Promises;
 import com.intentfilter.androidpermissions.PermissionManager;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -22,10 +24,15 @@ public class LocationManager {
     private Context mContext;
     private static LocationManager mLocationManager;
 
-    public static final String[] PERMISSIONS = {
-            Manifest.permission.ACCESS_COARSE_LOCATION,
-            Manifest.permission.ACCESS_FINE_LOCATION
-    };
+    public ArrayList<String> PERMISSIONS = new ArrayList<String>(
+        Arrays.asList(Manifest.permission.ACCESS_COARSE_LOCATION,
+        Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+    );
+
+    // public String[] PERMISSIONS = {
+    //         Manifest.permission.ACCESS_COARSE_LOCATION,
+    //         Manifest.permission.ACCESS_FINE_LOCATION
+    // };
 
     private LocationManager(Context context) {
         mContext = context;
@@ -43,8 +50,12 @@ public class LocationManager {
     public Promise<Location> getCurrentLocation(final int timeout, final long maximumAge, final boolean enableHighAccuracy) {
         final Promise<Location> promise = Promises.promise();
 
+        if (Build.VERSION.SDK_INT >= 29){
+            PERMISSIONS.add(Manifest.permission.ACTIVITY_RECOGNITION);
+        }
+
         PermissionManager permissionManager = PermissionManager.getInstance(mContext);
-        permissionManager.checkPermissions(Arrays.asList(PERMISSIONS), new PermissionManager.PermissionRequestListener() {
+        permissionManager.checkPermissions(PERMISSIONS, new PermissionManager.PermissionRequestListener() {
             @Override
             public void onPermissionGranted() {
                 try {
